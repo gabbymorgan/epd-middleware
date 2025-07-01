@@ -1,10 +1,15 @@
-from PIL import Image
+from PIL import Image, ImageFont
 import threading
-from .lib import epd2in13_V4
-from .lib import gt1151
+from lib import epd2in13_V4
+from lib import gt1151
 import os
-import RNS
 import time
+import io
+
+
+fontdir = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), 'assets/fonts')
+
 
 class EPaperInterface():
     # For hardware information, see documentation for Waveshare 2.13 inch touch e-paper device.
@@ -13,11 +18,15 @@ class EPaperInterface():
     # hardware and library constants
     MAX_PARTIAL_REFRESHES = 30
     MAX_REFRESH_INTERVAL = 24 * 60 * 60
+    MIN_REFRESH_INTERVAL = 1
     TIMEOUT_INTERVAL = 120
 
     # gesture enums
     SWIPE_LEFT = "left"
     SWIPE_RIGHT = "right"
+
+    FONT_15 = ImageFont.truetype(os.path.join(fontdir, 'Font.ttc'), 15)
+    FONT_12 = ImageFont.truetype(os.path.join(fontdir, 'Font.ttc'), 12)
 
     def __init__(self):
         try:
@@ -68,8 +77,7 @@ class EPaperInterface():
             self.shutdown()
 
         except Exception as e:
-            RNS.log(
-                "An error occured in the EPaperInterface. Exception was:" + str(e), RNS.LOG_ERROR)
+            print("An error occured in the EPaperInterface. Exception was:" + str(e))
 
     def base_touch_loop(self):
         while self.touch_flag:
@@ -90,7 +98,7 @@ class EPaperInterface():
                 self.awaken()
             elif now - self.last_full_refresh > self.MAX_REFRESH_INTERVAL:
                 self.clear_screen()
-            time.sleep(1)
+            time.sleep(EPaperInterface.MIN_REFRESH_INTERVAL)
 
     def detect_screen_interaction(self):
         # y values go up as touch moves left
@@ -123,7 +131,19 @@ class EPaperInterface():
 
         self.has_been_touching = self.is_touching
 
-        
+        return TouchData(last_touched=self.last_touched,
+                         is_touching=self.is_touching,
+                         has_been_touching=self.has_been_touching,
+                         touch_start_x=self.touch_start_x,
+                         touch_start_y=self.touch_start_y,
+                         touch_end_x=self.touch_end_x,
+                         touch_end_y=self.touch_end_y,
+                         did_swipe=self.did_swipe,
+                         swipe_direction=self.swipe_direction,
+                         did_tap=self.did_tap,
+                         tap_x=self.tap_x,
+                         tap_y=self.tap_y)
+
     def shutdown(self):
         self.touch_flag = False
         self.display_thread_flag = False
@@ -153,32 +173,57 @@ class EPaperInterface():
         self.canvas = Image.new('1', (self.height, self.width), 255)
         self.canvas.rotate(90)  # landscape mode
 
-    def render(self, isFrame=False):
+    def render(self):
         self.should_render = False
         if not self.screen_is_active:
             return
-        if self.partial_refresh_counter >= EPaperInterface.MAX_PARTIAL_REFRESHES or isFrame:
+        if self.partial_refresh_counter >= EPaperInterface.MAX_PARTIAL_REFRESHES:
             self.display.init(self.display.FULL_UPDATE)
-            self.display.displayPartBaseImage(
-                self.display.getbuffer(self.canvas))
+            self.display.displayPartBaseImage(self.display.getbuffer(self.canvas))
             self.partial_refresh_counter = 0
         else:
             self.display.displayPartial(self.display.getbuffer(self.canvas))
             self.partial_refresh_counter += 1
 
-    def request_render(self):
-        self.should_render = True
+    def request_render(self, image_data=None):
+        self.canvas = Image.open(io.BytesIO(image_data))
+        self.should_render = True 
 
-    def get_alignment(self, text, font):
-        # function presumes PIL font objects
-        left, top, right, bottom = font.getbbox(text)
-        text_width = right - left
-        text_height = bottom - top
-        
-        return {
-            'text_width': text_width,
-            'text_height': text_height,
-            'left_align': 0,
-            'right_align': self.height-text_width,
-            'center_align': (self.height-text_width)//2
-        }
+    def get_window(self):
+        return WindowData(width=self.width, height=self.height)
+
+
+class WindowData:
+    def __init__(self, width=None, height=None):
+        self.width = width
+        self.height = height
+
+
+class TouchData:
+    def __init__(self,
+                 last_touched=None,
+                 is_touching=None,
+                 has_been_touching=None,
+                 touch_start_x=None,
+                 touch_start_y=None,
+                 touch_end_x=None,
+                 touch_end_y=None,
+                 did_swipe=None,
+                 swipe_direction=None,
+                 did_tap=None,
+                 tap_x=None,
+                 tap_y=None
+                 ):
+
+        self.last_touched = last_touched
+        self.is_touching = is_touching
+        self.has_been_touching = has_been_touching
+        self.touch_start_x = touch_start_x
+        self.touch_start_y = touch_start_y
+        self.touch_end_x = touch_end_x
+        self.touch_end_y = touch_end_y
+        self.did_swipe = did_swipe
+        self.swipe_direction = swipe_direction
+        self.did_tap = did_tap
+        self.tap_x = tap_x
+        self.tap_y = tap_y
