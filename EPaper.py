@@ -1,18 +1,10 @@
-from PIL import Image, ImageFont
+from PIL import Image
 import threading
 from .lib import epd2in13_V4
 from .lib import gt1151
-import sys
 import os
-import logging
 import RNS
 import time
-
-fontdir = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.realpath(__file__))), 'epaperui/assets/fonts')
-picdir = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.realpath(__file__))), 'epaperui/assets')
-
 
 class EPaperInterface():
     # For hardware information, see documentation for Waveshare 2.13 inch touch e-paper device.
@@ -22,8 +14,6 @@ class EPaperInterface():
     MAX_PARTIAL_REFRESHES = 30
     MAX_REFRESH_INTERVAL = 24 * 60 * 60
     TIMEOUT_INTERVAL = 120
-    FONT_15 = ImageFont.truetype(os.path.join(fontdir, 'Font.ttc'), 15)
-    FONT_12 = ImageFont.truetype(os.path.join(fontdir, 'Font.ttc'), 12)
 
     # gesture enums
     SWIPE_LEFT = "left"
@@ -180,6 +170,7 @@ class EPaperInterface():
         self.should_render = True
 
     def get_alignment(self, text, font):
+        # function presumes PIL font objects
         left, top, right, bottom = font.getbbox(text)
         text_width = right - left
         text_height = bottom - top
