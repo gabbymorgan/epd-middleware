@@ -131,18 +131,18 @@ class EPaperInterface():
 
         self.has_been_touching = self.is_touching
 
-        return TouchData(last_touched=self.last_touched,
-                         is_touching=self.is_touching,
-                         has_been_touching=self.has_been_touching,
-                         touch_start_x=self.touch_start_x,
-                         touch_start_y=self.touch_start_y,
-                         touch_end_x=self.touch_end_x,
-                         touch_end_y=self.touch_end_y,
-                         did_swipe=self.did_swipe,
-                         swipe_direction=self.swipe_direction,
-                         did_tap=self.did_tap,
-                         tap_x=self.tap_x,
-                         tap_y=self.tap_y)
+        return {"last_touched": self.last_touched,
+                "is_touching": self.is_touching,
+                "has_been_touching": self.has_been_touching,
+                "touch_start_x": self.touch_start_x,
+                "touch_start_y": self.touch_start_y,
+                "touch_end_x": self.touch_end_x,
+                "touch_end_y": self.touch_end_y,
+                "did_swipe": self.did_swipe,
+                "swipe_direction": self.swipe_direction,
+                "did_tap": self.did_tap,
+                "tap_x": self.tap_x,
+                "tap_y": self.tap_y}
 
     def shutdown(self):
         self.touch_flag = False
@@ -179,7 +179,8 @@ class EPaperInterface():
             return
         if self.partial_refresh_counter >= EPaperInterface.MAX_PARTIAL_REFRESHES:
             self.display.init(self.display.FULL_UPDATE)
-            self.display.displayPartBaseImage(self.display.getbuffer(self.canvas))
+            self.display.displayPartBaseImage(
+                self.display.getbuffer(self.canvas))
             self.partial_refresh_counter = 0
         else:
             self.display.displayPartial(self.display.getbuffer(self.canvas))
@@ -187,7 +188,7 @@ class EPaperInterface():
 
     def request_render(self, image_data=None):
         self.canvas = Image.open(io.BytesIO(image_data))
-        self.should_render = True 
+        self.should_render = True
 
     def get_window(self):
         return WindowData(width=self.width, height=self.height)
@@ -198,32 +199,3 @@ class WindowData:
         self.width = width
         self.height = height
 
-
-class TouchData:
-    def __init__(self,
-                 last_touched=None,
-                 is_touching=None,
-                 has_been_touching=None,
-                 touch_start_x=None,
-                 touch_start_y=None,
-                 touch_end_x=None,
-                 touch_end_y=None,
-                 did_swipe=None,
-                 swipe_direction=None,
-                 did_tap=None,
-                 tap_x=None,
-                 tap_y=None
-                 ):
-
-        self.last_touched = last_touched
-        self.is_touching = is_touching
-        self.has_been_touching = has_been_touching
-        self.touch_start_x = touch_start_x
-        self.touch_start_y = touch_start_y
-        self.touch_end_x = touch_end_x
-        self.touch_end_y = touch_end_y
-        self.did_swipe = did_swipe
-        self.swipe_direction = swipe_direction
-        self.did_tap = did_tap
-        self.tap_x = tap_x
-        self.tap_y = tap_y
