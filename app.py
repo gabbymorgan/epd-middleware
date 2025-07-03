@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import FastAPI, File, WebSocket
+from fastapi import FastAPI, UploadFile, WebSocket
 
 from EPaper import *
 
@@ -14,14 +14,15 @@ async def read_root():
 
 @app.websocket("/screen_interaction")
 async def screen_interaction_stream(
-    *,
     websocket: WebSocket
 ):
     await websocket.accept()
     while True:
-        screen_data = interface.detect_screen_interaction()
-        await websocket.send_json(screen_data)
-        time.sleep(0.02)
+        signal = await websocket.receive_text()
+        if signal:
+            screen_data = interface.detect_screen_interaction()
+            await websocket.send_json(screen_data)
+
 
 @app.get("/screen_interaction")
 async def detect_screen_interaction():
@@ -78,9 +79,10 @@ async def reset_canvas():
 
 
 @app.post("/request_render")
-async def request_render(file: Annotated[bytes, File()]):
+async def request_render(file: UploadFile):
     try:
-        interface.request_render(image_data=file)
+        image = await file.read()
+        interface.request_render(image_data=image)
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
