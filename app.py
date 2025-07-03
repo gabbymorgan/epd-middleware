@@ -19,11 +19,9 @@ async def screen_interaction_stream(
 ):
     await websocket.accept()
     while True:
-        command = await websocket.receive_text()
-        if command == "1":
-            screen_data = interface.detect_screen_interaction()
-            print(screen_data)
-            await websocket.send_json(screen_data)
+        screen_data = interface.detect_screen_interaction()
+        await websocket.send_json(screen_data)
+        time.sleep(0.02)
 
 @app.get("/screen_interaction")
 async def detect_screen_interaction():
